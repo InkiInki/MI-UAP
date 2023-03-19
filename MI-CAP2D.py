@@ -141,8 +141,5 @@ def main():
 
 
 if __name__ == "__main__":
-    for xi in [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1]:
-        print(xi)
-        main()
-    # xi = 0.2
-    # main()
+    xi = 0.2
+    main()
