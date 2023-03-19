@@ -1,14 +1,12 @@
 import argparse
-# import cv2 as cv
 import numpy as np
 import torch
 import torch.utils.data as data_utils
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import recall_score
 from MILFool2D import Deepfool2D
 from MILFool2D import Trainer2D
 from MILFool2D.DataLoader2D import MnistBags
+
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -31,10 +29,7 @@ def get_bag_label(data_loader):
     return bags, labels
 
 
-def generate(tr_set, te_set, net, acc, recall,
-             delta=0.5, max_iter_df=50, xi=1.0, p=np.inf, num_class=2,
-             overshoot=0.2, tr_bag_ratio=0.9, mode="att"):
-    """"""
+def generate(tr_set, te_set, net, max_iter_df=50, xi=1.0, p=np.inf, num_class=2, overshoot=0.2, mode="att"):
 
     net.to(device)
     tr_bag, tr_label = get_bag_label(tr_set)
@@ -77,7 +72,7 @@ def generate(tr_set, te_set, net, acc, recall,
 def main():
     """"""
     parser = argparse.ArgumentParser(description='PyTorch MNIST bags Example')
-    parser.add_argument('--data_type', type=str, default="mnist", help='the type of databases')
+    parser.add_argument('--data_type', type=str, default=data_set, help='the type of databases')
     parser.add_argument('--target_number', type=int, default=9, metavar='T')
     parser.add_argument('--mean_bag_length', type=int, default=10, metavar='ML', help='average bag length')
     parser.add_argument('--var_bag_length', type=int, default=2, metavar='VL', help='variance of bag length')
@@ -114,32 +109,30 @@ def main():
 
     acc_list, f_acc_list, recall_list, f_recall_list = [], [], [], []
     for i in range(5):
+        trainer = None
         if args.data_type == "mnist":
-            # ma: d = 48 * 5 * 5; other: 50 * 4 * 4
-            trainer = Trainer2D.Trainer(net_type="ma", d=48 * 5 * 5, num_channel=1)
+            d = 48 * 5 * 5 if net_type == "ma" else 50 * 4 * 4
+            trainer = Trainer2D.Trainer(net_type=net_type, d=d, num_channel=1)
         elif args.data_type == "cifar10":
-            # ma: d = 48 * 6 * 6; other: 50 * 5 * 5
-            trainer = Trainer2D.Trainer(net_type="ma", d=48 * 6 * 6, num_channel=3)
+            d = 48 * 6 * 6 if net_type == "ma" else 50 * 5 * 5
+            trainer = Trainer2D.Trainer(net_type=net_type, d=d, num_channel=3)
         elif args.data_type == "stl10":
-            # ma: d = 48 * 22 * 22; other: 50 * 21 * 21
-            trainer = Trainer2D.Trainer(net_type="ab", d=50 * 21 * 21, num_channel=3)
+            d = 48 * 22 * 22 if net_type == "ma" else 50 * 21 * 21
+            trainer = Trainer2D.Trainer(net_type=net_type, d=d, num_channel=3)
         acc, recall = trainer.train(tr_loader, te_loader)
-        _, f_acc, f_recall = generate(tr_loader, te_loader, trainer.net, acc, recall, xi=xi, mode="ave")
+        _, f_acc, f_recall = generate(tr_loader, te_loader, trainer.net, xi=xi, mode="ave")
         print(acc, f_acc, recall, f_recall)
         acc_list.append(acc)
         f_acc_list.append(f_acc)
         recall_list.append(recall)
         f_recall_list.append(f_recall)
-    # print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(acc_list), np.std(acc_list, ddof=1)))
-    # print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(f_acc_list), np.std(f_acc_list, ddof=1)))
-    # print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(recall_list), np.std(recall_list, ddof=1)))
-    # print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(f_recall_list), np.std(f_recall_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(acc_list), np.std(acc_list, ddof=1)))
+
     print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(acc_list) - np.average(f_acc_list), np.std(f_acc_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(recall_list), np.std(recall_list, ddof=1)))
     print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(recall_list) - np.average(f_recall_list), np.std(f_recall_list, ddof=1)))
 
 
 if __name__ == "__main__":
     xi = 0.2
+    data_set = "mnist"  # mnist, cifar10, or stl10
+    net_type = "ab"  # ab: attention; ga: gated-attention; la: loss attention; ds: dual-stream; ma: multi-head attention
     main()
