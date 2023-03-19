@@ -4,7 +4,7 @@ from torch import optim
 from MILFool2D import NN2D
 from sklearn.metrics import accuracy_score, recall_score
 
-# device = torch.device("cpu")
+
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
@@ -52,18 +52,14 @@ class Trainer:
                 loss.backward()
                 # 步进
                 self.optimizer.step()
-            # print('%d,  loss: %.4f' % (epoch + 1, total_loss / len(tr_loader)))
 
             # 输出每一轮的精度
             acc, recall = compute_accuracy(self.net, te_loader)
-            # print('Acc: %.3lf, recall %.3lf' % (acc, recall))
-            # if best_acc < acc and recall > 0.2:
-            if best_acc < acc:
+            if best_acc < acc and recall > 0.2:
                 best_acc = acc
                 best_recall = recall
                 self.best_net = self.net
 
-        # print('Finished Training')
         return best_acc, best_recall
 
     def train_vad(self, tr_loader, te_loader, image_loader):
@@ -96,16 +92,16 @@ class Trainer:
             print('%d,  loss: %.4f' % (epoch + 1, total_loss / len(tr_loader)))
             if epoch >= 10:
                 torch.save(self.net.state_dict(), "D:\\Data\\weights\\avenue\\%06d.pt" % epoch)
-            #
-            #     # 输出每一轮的精度
-            #     acc, recall = compute_accuracy(self.net, te_loader)
-            #     print('Acc: %.3lf, recall %.3lf' % (acc, recall))
-            #     if best_acc < acc:
-            #         if recall < 0.2:
-            #             continue
-            #         best_acc = acc
-            #         best_recall = recall
-            #         self.best_net = self.net
+
+                # 输出每一轮的精度
+                acc, recall = compute_accuracy(self.net, te_loader)
+                print('Acc: %.3lf, recall %.3lf' % (acc, recall))
+                if best_acc < acc:
+                    if recall < 0.2:
+                        continue
+                    best_acc = acc
+                    best_recall = recall
+                    self.best_net = self.net
 
         print('Finished Training')
         return best_acc, best_recall
