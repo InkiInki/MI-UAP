@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from MILFool import Deepfool, Trainer
-from MILFool.utils import project_perturbation, get_bag_label
+from MILFool.utils import project_perturbation, get_bag_label, print_acc_and_recall
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
@@ -109,19 +109,18 @@ def main_shanghai():
         print("Loop %d" % i)
         trainer = Trainer.Trainer(2048, net_type=net_type)
         acc, recall = trainer.train(tr_loader, tr_loader)
-        _, f_acc, f_recall = generate(tr_loader, tr_loader, trainer.net, acc, recall, xi=0.01, max_iter_uni=10, mode="att")
+        _, f_acc, f_recall = generate(tr_loader, tr_loader, trainer.net, acc, recall, xi=xi, max_iter_uni=10, mode="att")
         print(acc, f_acc, recall, f_recall)
         acc_list.append(acc)
         f_acc_list.append(f_acc)
         recall_list.append(recall)
         f_recall_list.append(f_recall)
-    print("Acc: %.3lf, %.3lf" % (np.average(acc_list), np.std(acc_list, ddof=1)))
-    print("Declined Acc: %.3lf, %.3lf" % (np.average(acc_list) - np.average(f_acc_list), np.std(f_acc_list, ddof=1)))
-    print("Recall: %.3lf, %.3lf" % (np.average(recall_list), np.std(recall_list, ddof=1)))
-    print("Declined Recall: %.3lf, %.3lf" % (np.average(recall_list) - np.average(f_recall_list), np.std(f_recall_list, ddof=1)))
+    
+    print_acc_and_recall(acc_list, f_acc_list, recall_list, f_recall_list)
 
 
 if __name__ == "__main__":
+    xi = 0.01
     dataset = "shanghai"  # shanghai: shanghaiTech; ucf: ucf-crime
     net_type = "ab"  # The attacked network: ab: ABMIL; ga: GAMIL; la: LAMIL; ds: DSMIL; ma: MAMIL
     main_shanghai()
