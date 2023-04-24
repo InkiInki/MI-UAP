@@ -109,7 +109,7 @@ def main_shanghai():
         print("Loop %d" % i)
         trainer = Trainer.Trainer(2048, net_type=net_type)
         acc, recall = trainer.train(tr_loader, tr_loader)
-        _, f_acc, f_recall = generate(tr_loader, tr_loader, trainer.net, acc, recall, xi=xi, max_iter_uni=10, mode="att")
+        _, f_acc, f_recall = generate(tr_loader, tr_loader, trainer.best_net, acc, recall, xi=xi, max_iter_uni=10, mode="att")
         print(acc, f_acc, recall, f_recall)
         acc_list.append(acc)
         f_acc_list.append(f_acc)
