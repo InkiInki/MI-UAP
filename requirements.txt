@@ -1,0 +1,7 @@
+argparse
+numpy
+pandas
+sklearn
+scipy
+torch
+torchvision
