@@ -5,8 +5,6 @@ Node. Usually no need to change this file.
 
 
 import argparse
-
-
 parser = argparse.ArgumentParser(description='RTFM')
 parser.add_argument('--feat-extractor', default='i3d', choices=['i3d', 'c3d'])
 parser.add_argument('--feature-size', type=int, default=2048, help='size of feature (default: 2048)')
