@@ -1,42 +1,17 @@
 import argparse
-# import cv2 as cv
 import numpy as np
 import torch
 import torch.utils.data as data_utils
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import recall_score, accuracy_score
-from Dataset.VAD import avenue
 from MILFool2D import Deepfool2D
 from MILFool2D import Trainer2D
 from MILFool2D.DataLoader2D import MnistBags
-
+from MILFool.utils import project_perturbation, get_bag_label, print_acc_and_recall
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
-def project_perturbation(data_point, p, perturbation):
-    if p == 2:
-        perturbation = perturbation * min(1, data_point / np.linalg.norm(perturbation.flatten(1)))
-    elif p == np.inf:
-        perturbation = np.sign(perturbation) * np.minimum(abs(perturbation), data_point)
-    return perturbation
-
-
-def get_bag_label(data_loader):
-    bags = []
-    labels = []
-    for bag, label in data_loader:
-        bags.append(bag)
-        labels.append(label)
-
-    return bags, labels
-
-
-def generate(tr_set, te_set, net, acc, recall,
-             delta=0.5, max_iter_uni=10, max_iter_df=50, xi=1.0, p=np.inf, num_class=2,
-             overshoot=0.2, tr_bag_ratio=0.9, mode="att"):
-    """"""
-
+def generate(tr_set, te_set, net, delta=0.5, max_iter_uni=10, max_iter_df=50, p=np.inf, num_class=2,
+             overshoot=0.2, tr_bag_ratio=0.9):
     net.to(device)
     tr_bag, tr_label = get_bag_label(tr_set)
     te_bag, te_label = get_bag_label(te_set)
@@ -59,7 +34,6 @@ def generate(tr_set, te_set, net, acc, recall,
             _, y_hat, _ = net(bag)
             torch.cuda.empty_cache()
 
-            # new_bag = bag + v.astype(np.uint8)
             new_bag = bag + torch.as_tensor(v).float()
             y_per = net(new_bag)[1]
             torch.cuda.empty_cache()
@@ -94,7 +68,6 @@ def generate(tr_set, te_set, net, acc, recall,
 
         torch.cuda.empty_cache()
 
-        # 计算愚弄率
         fooling = accuracy_score(y_list, y_per_list)
         fooling_list.append(fooling)
         v_list.append(v)
@@ -124,6 +97,7 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 
     args = parser.parse_args()
+    args.data_type = data_type
     loader_kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
     tr_loader = data_utils.DataLoader(MnistBags(
         data_type=args.data_type,
@@ -150,59 +124,32 @@ def main():
         **loader_kwargs)
 
     acc_list, f_acc_list, recall_list, f_recall_list = [], [], [], []
+    trainer = None
     for i in range(5):
+        print("Loop %d" % i)
         if args.data_type == "mnist":
-            trainer = Trainer2D.Trainer(net_type="ab", d=50 * 4 * 4, num_channel=1)
+            d = 50 * 4 * 4 if net_type != "ma" else 48 * 5 * 5
+            trainer = Trainer2D.Trainer(net_type=net_type, d=d, num_channel=1)
         elif args.data_type == "cifar10":
-            trainer = Trainer2D.Trainer(net_type="ma", d=48 * 6 * 6, num_channel=3)
-        elif args.data_type == "SIL10":
-            trainer = Trainer2D.Trainer(net_type="ab", d=50 * 21 * 21, num_channel=3)
+            d = 50 * 5 * 5 if net_type != "ma" else 48 * 6 * 6
+            trainer = Trainer2D.Trainer(net_type=net_type, d=d, num_channel=3)
+        elif args.data_type == "stl10":
+            d = 50 * 21 * 21 if net_type != "ma" else 48 * 22 * 22
+            trainer = Trainer2D.Trainer(net_type=net_type, d=d, num_channel=3)
         acc, recall = trainer.train(tr_loader, te_loader)
-        _, f_acc, f_recall = generate(tr_loader, te_loader, trainer.best_net,
-                                      acc, recall, xi=xi, max_iter_uni=10, mode="ave")
+        _, f_acc, f_recall = generate(tr_loader, te_loader, trainer.best_net, max_iter_uni=10)
         print(acc, f_acc, recall, f_recall)
         acc_list.append(acc)
         f_acc_list.append(f_acc)
         recall_list.append(recall)
         f_recall_list.append(f_recall)
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(acc_list), np.std(acc_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(acc_list) - np.average(f_acc_list), np.std(f_acc_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(recall_list), np.std(recall_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(recall_list) - np.average(f_recall_list), np.std(f_recall_list, ddof=1)))
-
-
-def main_vad():
-    """"""
-    data_type = "avenue"
-    bag_loader = avenue.BagLoader()
-    tr_path, te_path, clip_len, image_loader = (
-        bag_loader.tr_list, bag_loader.te_list, bag_loader.clip_len, bag_loader.image_loader
-    )
-    loader_kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    tr_loader = data_utils.DataLoader(tr_path, batch_size=1, **loader_kwargs)
-    te_loader = data_utils.DataLoader(te_path, batch_size=1, **loader_kwargs)
-
-    acc_list, f_acc_list, recall_list, f_recall_list = [], [], [], []
-    for i in range(5):
-        trainer = Trainer2D.Trainer(net_type="ab", d=50 * 87 * 157, num_channel=3)
-        acc, recall = trainer.train_vad(tr_loader, te_loader, image_loader)
-        _, f_acc, f_recall = generate(tr_loader, tr_loader, trainer.best_net, acc, recall, xi=xi, max_iter_uni=10)
-        print(acc, f_acc, recall, f_recall)
-        acc_list.append(acc)
-        f_acc_list.append(f_acc)
-        recall_list.append(recall)
-        f_recall_list.append(f_recall)
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(acc_list), np.std(acc_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(acc_list) - np.average(f_acc_list), np.std(f_acc_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (np.average(recall_list), np.std(recall_list, ddof=1)))
-    print("& $\\pmb{%.3lf, %.3lf}$" % (    np.average(recall_list) - np.average(f_recall_list), np.std(f_recall_list, ddof=1)))
+    
+    print_acc_and_recall(acc_list, f_acc_list, recall_list, f_recall_list)
 
 
 if __name__ == "__main__":
-    # for xi in [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1]:
-    #     print(xi)
-    #     main()
-    #     break
-    xi = 0.2
-    main_vad()
-    # main()
+    xi = 0.2  # The magnitude of perturbation
+    mode = "ave"  # ave or att
+    net_type = "ab"  # The attacked network: ab: ABMIL; ga: GAMIL; la: LAMIL; ds: DSMIL; ma: MAMIL
+    data_type = "mnist"  # mnist, cifar10, stl10
+    main()
