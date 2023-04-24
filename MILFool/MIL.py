@@ -1,15 +1,7 @@
-"""
-作者: 因吉
-邮箱: inki.yinji@gmail.com
-创建日期：2020 0903
-近一次修改：2021 0916
-说明：多示例学习的原型文件，用于获取数据集名称、包空间、包大小等
-"""
-
 import warnings
 import numpy as np
 import os as os
-from MILFool.utils import load_file, kernel_rbf, print_progress_bar
+from MILFool.utils import load_file, kernel_rbf
 warnings.filterwarnings("ignore")
 
 
@@ -51,9 +43,6 @@ class MIL:
         """
         if self.bag_space is None:
             self.bag_space = load_file(self.data_path)
-        # elif self.bag_space == "test":
-        #     from gendata_gulfport import merge
-        #     self.bag_space = merge()
         self.N = len(self.bag_space)
 
         self.bag_size = np.zeros(self.N, dtype=int)
@@ -63,7 +52,6 @@ class MIL:
         for i in range(self.N):
             self.bag_size[i] = len(self.bag_space[i][0])
             self.bag_lab[i] = self.bag_space[i][1]
-        # 将所有包的标签调整到 [0, C - 1]的范围，C为数据集的类别数
         self.__bag_lab_map()
 
         self.n = sum(self.bag_size)
@@ -199,7 +187,6 @@ class MIL:
         MATRIX = []
         # print("计算关联矩阵中...")
         for i, bag in enumerate(self.bag_space):
-            # print_progress_bar(i, self.N)
             bag = bag[0][:, :-1]
             matrix = np.zeros((self.bag_size[i], self.bag_size[i]))
             # 计算阈值
@@ -214,7 +201,6 @@ class MIL:
                     matrix[j, k] = 1 if matrix[j, k] < delta or j == k else 0
             MATRIX.append(matrix)
 
-        # print()
         return MATRIX
 
     def get_mean_cov(self):
@@ -222,12 +208,10 @@ class MIL:
         print("计算协方差矩阵和均值向量...")
         MEAN, COV = [], []
         for i in range(self.N):
-            # print_progress_bar(i, self.N)
             bag = self.get_bag(i)
             MEAN.append(np.average(bag, 0))
             COV.append(np.cov(bag.T))
 
-        # print()
         return MEAN, COV
 
     def get_bag(self, i):
@@ -239,22 +223,10 @@ class MIL:
 
     def get_min_max(self):
         """"""
-        # print("计算每个包内的基于最大值最小的向量")
         MIN_MAX_VECTOR = []
         for i in range(self.N):
-            # print_progress_bar(i, self.N)
             bag = self.get_bag(i)
             min_max_vector = np.hstack((bag.min(0), bag.max(0)))
             MIN_MAX_VECTOR.append(min_max_vector)
-        # print()
 
         return MIN_MAX_VECTOR
-
-
-if __name__ == '__main__':
-    temp_file_name = "D:/Data/OneDrive/Code/MIL1/Data/Drug/musk1+.mat"
-    mil = MIL(temp_file_name)
-    import time
-    s = time.time()
-    mil.get_min_max()
-    print((time.time() - s) * 1000)
