@@ -108,3 +108,11 @@ def get_bag_label(data_loader):
         labels.append(label)
 
     return bags, labels
+
+
+def print_acc_and_recall(acc_list, f_acc_list, recall_list, f_recall_list):
+    print("Acc: %.3lf, %.3lf" % (np.average(acc_list), np.std(acc_list, ddof=1)))
+    print("Declined Acc: %.3lf, %.3lf" % (np.average(acc_list) - np.average(f_acc_list), np.std(f_acc_list, ddof=1)))
+    print("Recall: %.3lf, %.3lf" % (np.average(recall_list), np.std(recall_list, ddof=1)))
+    print("Declined Recall: %.3lf, %.3lf" % (
+    np.average(recall_list) - np.average(f_recall_list), np.std(f_recall_list, ddof=1)))
