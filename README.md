@@ -5,7 +5,7 @@ Official repository for *Interpreting Vulnerabilities of Multi-Instance Learning
 Any question can contact with inki.yinji@gmail.com<br>
 My home pages:
   * **Blog**: [https://inkiyinji.blog.csdn.net](https://inkiyinji.blog.csdn.net "Inki's blog")
-  * **Data**： [https://www.kaggle.com/inkiyinji](https://www.kaggle.com/inkiyinji "Inki's kaggle")
+  * **Data**: [https://www.kaggle.com/inkiyinji](https://www.kaggle.com/inkiyinji "Inki's kaggle")
 
 ****
 
