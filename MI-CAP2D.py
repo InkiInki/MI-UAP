@@ -103,7 +103,7 @@ def main():
             d = 50 * 21 * 21 if net_type != "ma" else 48 * 22 * 22
             trainer = Trainer2D.Trainer(net_type=net_type, d=d, num_channel=3)
         acc, recall = trainer.train(tr_loader, te_loader)
-        _, f_acc, f_recall = generate(tr_loader, te_loader, trainer.net)
+        _, f_acc, f_recall = generate(tr_loader, te_loader, trainer.best_net)
         print(acc, f_acc, recall, f_recall)
         acc_list.append(acc)
         f_acc_list.append(f_acc)
