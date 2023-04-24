@@ -1,12 +1,4 @@
 # coding: utf-8
-"""
-作者: 因吉
-邮箱: inki.yinji@qq.com
-创建: 2021 0805
-修改: 2021 0806
-"""
-
-
 import numpy as np
 from scipy.io import loadmat
 from numba import jit
@@ -98,3 +90,21 @@ def kernel_rbf(arr1, arr2=None, gamma=1):
     if arr2 is None:
         return np.sqrt(np.sum(arr1**2))
     return np.exp(-gamma * dis_euclidean(arr1, arr2))
+
+
+def project_perturbation(data_point, p, perturbation):
+    if p == 2:
+        perturbation = perturbation * min(1, data_point / np.linalg.norm(perturbation.flatten(1)))
+    elif p == np.inf:
+        perturbation = np.sign(perturbation) * np.minimum(abs(perturbation), data_point)
+    return perturbation
+
+
+def get_bag_label(data_loader):
+    bags = []
+    labels = []
+    for bag, label in data_loader:
+        bags.append(bag)
+        labels.append(label)
+
+    return bags, labels
