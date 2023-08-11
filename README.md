@@ -39,11 +39,12 @@ For experimental parameters:
 # Citation
 You can cite our paper as:
 ```
-@article{Zhang:2023:111,
-author		=	{Yu-Xuan Zhang and Hua Meng and Xue Mei Cao and Zheng Chun Zhou and Mei Yang and Avik Ranjan Adhikary},
+@article{Zhang:2023:109725,
+author		=	{Yu-Xuan Zhang and Hua Meng and Xue-Mei Cao and Zheng Chun Zhou and Mei Yang and Avik Ranjan Adhikary},
 title		=	{Interpreting vulnerabilities of multi-instance learning to adversarial perturbations},
-journal		=	{{arXiv}},
-pages		=	{1--11},
+journal		=	{Pattern Recognition},
+pages		=	{109725},
 year		=	{2023},
-url             =	{https://arxiv.org/abs/2211.17071}
+url			=	{https://doi.org/10.1016/j.patcog.2023.109725}
+}
 ```
